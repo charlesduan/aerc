@@ -24,9 +24,10 @@ type TextInput struct {
 	scroll            int
 	text              []rune
 	change            []func(ti *TextInput)
-	tabcomplete       func(s string) []string
+	tabcomplete       func(s string) ([]string, int)
 	completions       []string
 	completeIndex     int
+	completeChomp	  int
 	completeDelay     time.Duration
 	completeDebouncer *time.Timer
 	uiConfig          config.UIConfig
@@ -55,7 +56,7 @@ func (ti *TextInput) Prompt(prompt string) *TextInput {
 }
 
 func (ti *TextInput) TabComplete(
-	tabcomplete func(s string) []string, d time.Duration) *TextInput {
+	tabcomplete func(s string) ([]string, int), d time.Duration) *TextInput {
 	ti.tabcomplete = tabcomplete
 	ti.completeDelay = d
 	return ti
@@ -119,6 +120,7 @@ func (ti *TextInput) drawPopover(ctx *Context) {
 		options:    ti.completions,
 		idx:        ti.completeIndex,
 		stringLeft: ti.StringLeft(),
+		chompLeft:  ti.completeChomp,
 		onSelect: func(idx int) {
 			ti.completeIndex = idx
 			ti.Invalidate()
@@ -134,7 +136,7 @@ func (ti *TextInput) drawPopover(ctx *Context) {
 		},
 		uiConfig: ti.uiConfig,
 	}
-	width := maxLen(ti.completions) + 3
+	width := maxLen(ti.completions, cmp.chompLeft) + 3
 	height := len(ti.completions)
 	ctx.Popover(0, 0, width, height, cmp)
 }
@@ -286,7 +288,7 @@ func (ti *TextInput) showCompletions() {
 		// no completer
 		return
 	}
-	ti.completions = ti.tabcomplete(ti.StringLeft())
+	ti.completions, ti.completeChomp = ti.tabcomplete(ti.StringLeft())
 	ti.completeIndex = -1
 	ti.Invalidate()
 }
@@ -357,16 +359,18 @@ type completions struct {
 	options    []string
 	stringLeft string
 	idx        int
+        chompLeft  int
 	onSelect   func(int)
 	onExec     func()
 	onStem     func(string)
 	uiConfig   config.UIConfig
 }
 
-func maxLen(ss []string) int {
+func maxLen(ss []string, chomp int) int {
 	max := 0
 	for _, s := range ss {
-		l := runewidth.StringWidth(s)
+		if len(s) <= chomp { continue }
+		l := runewidth.StringWidth(s[chomp:])
 		if l > max {
 			max = l
 		}
@@ -395,6 +399,12 @@ func (c *completions) Draw(ctx *Context) {
 		}
 		if idx > endIdx {
 			continue
+		}
+
+		if len(opt) > c.chompLeft {
+			opt = opt[c.chompLeft:]
+		} else {
+			opt = ""
 		}
 		if c.idx == idx {
 			ctx.Fill(0, idx-startIdx, ctx.Width(), 1, ' ', sel)

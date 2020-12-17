@@ -29,7 +29,7 @@ type Completer struct {
 
 // A CompleteFunc accepts a string to be completed and returns a slice of
 // possible completions.
-type CompleteFunc func(string) []string
+type CompleteFunc func(string) ([]string, int)
 
 // New creates a new Completer with the specified address book command.
 func New(addressBookCmd string, errHandler func(error), logger *log.Logger) *Completer {
@@ -50,13 +50,13 @@ func (c *Completer) ForHeader(h string) CompleteFunc {
 			return nil
 		}
 		// wrap completeAddress in an error handler
-		return func(s string) []string {
+		return func(s string) ([]string, int) {
 			completions, err := c.completeAddress(s)
 			if err != nil {
 				c.handleErr(err)
-				return []string{}
+				return []string{}, 0
 			}
-			return completions
+			return completions, 0
 		}
 	}
 	return nil

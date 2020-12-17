@@ -75,13 +75,13 @@ func execCommand(aerc *widgets.Aerc, ui *libui.UI, cmd []string) error {
 	return nil
 }
 
-func getCompletions(aerc *widgets.Aerc, cmd string) []string {
+func getCompletions(aerc *widgets.Aerc, cmd string) ([]string, int) {
 	var completions []string
 	for _, set := range getCommands((*aerc).SelectedTab()) {
 		completions = append(completions, set.GetCompletions(aerc, cmd)...)
 	}
 	sort.Strings(completions)
-	return completions
+	return completions, 0
 }
 
 var (
@@ -155,7 +155,7 @@ func main() {
 
 	aerc = widgets.NewAerc(conf, logger, func(cmd []string) error {
 		return execCommand(aerc, ui, cmd)
-	}, func(cmd string) []string {
+	}, func(cmd string) ([]string, int) {
 		return getCompletions(aerc, cmd)
 	}, &commands.CmdHistory)
 

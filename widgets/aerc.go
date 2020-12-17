@@ -24,7 +24,7 @@ type Aerc struct {
 	accounts    map[string]*AccountView
 	cmd         func(cmd []string) error
 	cmdHistory  lib.History
-	complete    func(cmd string) []string
+	complete    func(cmd string) ([]string, int)
 	conf        *config.AercConfig
 	focused     ui.Interactive
 	grid        *ui.Grid
@@ -47,7 +47,7 @@ type Choice struct {
 }
 
 func NewAerc(conf *config.AercConfig, logger *log.Logger,
-	cmd func(cmd []string) error, complete func(cmd string) []string,
+	cmd func(cmd []string) error, complete func(cmd string) ([]string, int),
 	cmdHistory lib.History) *Aerc {
 
 	tabs := ui.NewTabs(&conf.Ui)
@@ -443,7 +443,7 @@ func (aerc *Aerc) BeginExCommand(cmd string) {
 	}, func() {
 		aerc.statusbar.Pop()
 		aerc.focus(previous)
-	}, func(cmd string) []string {
+	}, func(cmd string) ([]string, int) {
 		return aerc.complete(cmd)
 	}, aerc.cmdHistory)
 	aerc.statusbar.Push(exline)
@@ -459,8 +459,8 @@ func (aerc *Aerc) RegisterPrompt(prompt string, cmd []string) {
 		if err != nil {
 			aerc.PushError(" " + err.Error())
 		}
-	}, func(cmd string) []string {
-		return nil // TODO: completions
+	}, func(cmd string) ([]string, int) {
+		return nil, 0 // TODO: completions
 	})
 	aerc.prompts.Push(p)
 }
@@ -486,8 +486,8 @@ func (aerc *Aerc) RegisterChoices(choices []Choice) {
 		if err != nil {
 			aerc.PushError(" " + err.Error())
 		}
-	}, func(cmd string) []string {
-		return nil // TODO: completions
+	}, func(cmd string) ([]string, int) {
+		return nil, 0 // TODO: completions
 	})
 	aerc.prompts.Push(p)
 }

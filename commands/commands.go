@@ -68,16 +68,19 @@ func (cmds *Commands) ExecuteCommand(aerc *widgets.Aerc, args []string) error {
 	return NoSuchCommand(args[0])
 }
 
-func (cmds *Commands) GetCompletions(aerc *widgets.Aerc, cmd string) []string {
+func (cmds *Commands) GetCompletions(
+    aerc *widgets.Aerc,
+    cmd string,
+) ([]string, int) {
 	args, err := shlex.Split(cmd)
 	if err != nil {
-		return nil
+		return nil, 0
 	}
 
 	if len(args) == 0 {
 		names := cmds.Names()
 		sort.Strings(names)
-		return names
+		return names, 0
 	}
 
 	if len(args) > 1 || cmd[len(cmd)-1] == ' ' {
@@ -89,16 +92,16 @@ func (cmds *Commands) GetCompletions(aerc *widgets.Aerc, cmd string) []string {
 				completions = cmd.Complete(aerc, []string{})
 			}
 			if completions != nil && len(completions) == 0 {
-				return nil
+				return nil, 0
 			}
 
 			options := make([]string, 0)
 			for _, option := range completions {
 				options = append(options, args[0]+" "+option)
 			}
-			return options
+			return options, len(args[0]) + 1
 		}
-		return nil
+		return nil, 0
 	}
 
 	names := cmds.Names()
@@ -110,9 +113,9 @@ func (cmds *Commands) GetCompletions(aerc *widgets.Aerc, cmd string) []string {
 	}
 
 	if len(options) > 0 {
-		return options
+		return options, 0
 	}
-	return nil
+	return nil, 0
 }
 
 func GetFolders(aerc *widgets.Aerc, args []string) []string {

@@ -51,12 +51,12 @@ func (c *Completer) ForHeader(h string) CompleteFunc {
 		}
 		// wrap completeAddress in an error handler
 		return func(s string) ([]string, int) {
-			completions, err := c.completeAddress(s)
+			completions, chomp, err := c.completeAddress(s)
 			if err != nil {
 				c.handleErr(err)
 				return []string{}, 0
 			}
-			return completions, 0
+			return completions, chomp
 		}
 	}
 	return nil
@@ -75,21 +75,25 @@ func isAddressHeader(h string) bool {
 // completeAddress uses the configured address book completion command to fetch
 // completions for the specified string, returning a slice of completions or an
 // error.
-func (c *Completer) completeAddress(s string) ([]string, error) {
-	cmd, err := c.getAddressCmd(s)
+func (c *Completer) completeAddress(s string) ([]string, int, error) {
+
+	// Parse the string to extract the last, partial address.
+	partialAddr, chomp := parseLastAddress(s)
+
+	cmd, err := c.getAddressCmd(partialAddr)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, fmt.Errorf("stdout: %v", err)
+		return nil, 0, fmt.Errorf("stdout: %v", err)
 	}
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("cmd start: %v", err)
+		return nil, 0, fmt.Errorf("cmd start: %v", err)
 	}
 	completions, err := readCompletions(stdout)
 	if err != nil {
-		return nil, fmt.Errorf("read completions: %v", err)
+		return nil, 0, fmt.Errorf("read completions: %v", err)
 	}
 
 	// Wait returns an error if the exit status != 0, which some completion
@@ -100,7 +104,67 @@ func (c *Completer) completeAddress(s string) ([]string, error) {
 		c.logger.Printf("completion error: %v", err)
 	}
 
-	return completions, nil
+	// If we chomped off part of the string, we need to tack it onto the front
+	// of all the completions now
+	if chomp > 0 {
+		prefix := s[:chomp]
+		for i, cp := range completions {
+			completions[i] = prefix + cp
+		}
+	}
+	return completions, chomp, nil
+}
+
+const (
+	stateText = iota
+	stateQuote
+	stateQuotedPair
+	stateComma
+)
+
+//
+// Finds the last address in the string, and returns that trailing address and
+// the index of the address in the string. The function implements a simple
+// state machine that searches for commas outside of quoted phrases.
+//
+func parseLastAddress(s string) (string, int) {
+	chomp := 0
+	state := stateText
+
+	for i := 0; i < len(s); i++ {
+		thisByte := s[i]
+		switch state {
+		case stateText:
+			if thisByte == ',' {
+				chomp = i + 1
+				state = stateComma
+			} else if thisByte == '"' {
+				state = stateQuote
+			} // otherwise remain in stateText
+
+		case stateQuote:
+			if thisByte == '"' {
+				state = stateText
+			} else if thisByte == '\\' {
+				state = stateQuotedPair
+			} // otherwise remain in stateQuote
+
+		case stateQuotedPair:
+			state = stateQuote
+
+		case stateComma:
+			// In this state, we can at least chomp to this point
+			chomp = i
+			if thisByte == ' ' || thisByte == '\t' {
+				// state remains
+			} else if thisByte == '"' {
+				state = stateQuote
+			} else {
+				state = stateText
+			}
+		}
+	}
+	return s[chomp:], chomp
 }
 
 // getAddressCmd constructs an exec.Cmd based on the configured command and

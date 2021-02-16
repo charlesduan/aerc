@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 
 	"git.sr.ht/~sircmpwn/aerc/config"
@@ -235,7 +235,7 @@ func (dirlist *DirectoryList) Draw(ctx *ui.Context) {
 			break
 		}
 
-		style := tcell.StyleDefault
+		style := dirlist.UiConfig().GetStyle(config.STYLE_DIRLIST_DEFAULT)
 		if name == dirlist.selected {
 			style = dirlist.UiConfig().GetStyleSelected(config.STYLE_DIRLIST_DEFAULT)
 		}

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/emersion/go-message/mail"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -460,8 +460,6 @@ func writeMultipartBody(body io.Reader, w *mail.Writer) error {
 
 // write the attachment specified by path to the message
 func writeAttachment(path string, writer *mail.Writer) error {
-	filename := filepath.Base(path)
-
 	f, err := os.Open(path)
 	if err != nil {
 		return errors.Wrap(err, "os.Open")
@@ -470,20 +468,30 @@ func writeAttachment(path string, writer *mail.Writer) error {
 
 	reader := bufio.NewReader(f)
 
-	// determine the MIME type
-	// http.DetectContentType only cares about the first 512 bytes
-	head, err := reader.Peek(512)
-	if err != nil && err != io.EOF {
-		return errors.Wrap(err, "Peek")
+	// if we have an extension, prefer that instead of trying to sniff the header.
+	// That's generally more accurate than sniffing as lots of things are zip files
+	// under the hood, e.g. most office file types
+	ext := filepath.Ext(path)
+	var mimeString string
+	if mimeString = mime.TypeByExtension(ext); mimeString != "" {
+		// found it in the DB
+	} else {
+		// Sniff the mime type instead
+		// http.DetectContentType only cares about the first 512 bytes
+		head, err := reader.Peek(512)
+		if err != nil && err != io.EOF {
+			return errors.Wrap(err, "Peek")
+		}
+		mimeString = http.DetectContentType(head)
 	}
 
-	mimeString := http.DetectContentType(head)
 	// mimeString can contain type and params (like text encoding),
 	// so we need to break them apart before passing them to the headers
 	mimeType, params, err := mime.ParseMediaType(mimeString)
 	if err != nil {
 		return errors.Wrap(err, "ParseMediaType")
 	}
+	filename := filepath.Base(path)
 	params["name"] = filename
 
 	// set header fields
@@ -762,9 +770,9 @@ func (he *headerEditor) setValue(val string) {
 }
 
 func (he *headerEditor) Draw(ctx *ui.Context) {
-	normalized := textproto.CanonicalMIMEHeaderKey(he.name)
-	name := normalized + " "
-	size := runewidth.StringWidth(name)
+	name := textproto.CanonicalMIMEHeaderKey(he.name)
+	// Extra character to put a blank cell between the header and the input
+	size := runewidth.StringWidth(name) + 1
 	defaultStyle := he.uiConfig.GetStyle(config.STYLE_DEFAULT)
 	headerStyle := he.uiConfig.GetStyle(config.STYLE_HEADER)
 	ctx.Fill(0, 0, size, ctx.Height(), ' ', defaultStyle)

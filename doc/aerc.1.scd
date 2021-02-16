@@ -125,7 +125,7 @@ message list, the message in the message viewer, etc).
 *forward* [-A] [address...]
 	Opens the composer to forward the selected message to another recipient.
 
-	*-A*: Forward the message as an RFC 8022 attachment.
+	*-A*: Forward the message as an RFC 2822 attachment.
 
 *move* <target>
 	Moves the selected message to the target folder.
@@ -307,9 +307,9 @@ message list, the message in the message viewer, etc).
 	Cycles between message parts being shown. The list of message parts is shown
 	at the bottom of the message viewer.
 
-*open*
+*open* [args...]
 	Saves the current message part in a temporary file and opens it
-	with the system handler.
+	with the system handler. Any given args are forwarded to the open handler
 
 *save* [-fp] <path>
 	Saves the current message part to the given path.

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/emersion/go-message/mail"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/google/shlex"
 	"golang.org/x/crypto/openpgp"
 
@@ -429,11 +429,11 @@ func (aerc *Aerc) BeginExCommand(cmd string) {
 	exline := NewExLine(aerc.conf, cmd, func(cmd string) {
 		parts, err := shlex.Split(cmd)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 		}
 		err = aerc.cmd(parts)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 		}
 		// only add to history if this is an unsimulated command,
 		// ie one not executed from a keybinding
@@ -457,7 +457,7 @@ func (aerc *Aerc) RegisterPrompt(prompt string, cmd []string) {
 		}
 		err := aerc.cmd(cmd)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 		}
 	}, func(cmd string) ([]string, int) {
 		return nil, 0 // TODO: completions
@@ -484,7 +484,7 @@ func (aerc *Aerc) RegisterChoices(choices []Choice) {
 		}
 		err := aerc.cmd(cmd)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 		}
 	}, func(cmd string) ([]string, int) {
 		return nil, 0 // TODO: completions
@@ -514,6 +514,12 @@ func (aerc *Aerc) Mailto(addr *url.URL) error {
 			}
 			h.SetAddressList("Cc", list)
 		case "in-reply-to":
+			for i, msgID := range vals {
+				if len(msgID) > 1 && msgID[0] == '<' &&
+					msgID[len(msgID)-1] == '>' {
+					vals[i] = msgID[1 : len(msgID)-1]
+				}
+			}
 			h.SetMsgIDList("In-Reply-To", vals)
 		case "subject":
 			subject = strings.Join(vals, ",")

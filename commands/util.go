@@ -13,7 +13,7 @@ import (
 	"git.sr.ht/~sircmpwn/aerc/lib"
 	"git.sr.ht/~sircmpwn/aerc/models"
 	"git.sr.ht/~sircmpwn/aerc/widgets"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -32,7 +32,7 @@ func QuickTerm(aerc *widgets.Aerc, args []string, stdin io.Reader) (*widgets.Ter
 
 	term.OnClose = func(err error) {
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 			// remove the tab on error, otherwise it gets stuck
 			aerc.RemoveTab(term)
 		} else {
@@ -56,7 +56,7 @@ func QuickTerm(aerc *widgets.Aerc, args []string, stdin io.Reader) (*widgets.Ter
 
 		err := <-status
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 		}
 	}
 

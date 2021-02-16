@@ -1,7 +1,6 @@
 package msgview
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,10 +27,6 @@ func (Open) Complete(aerc *widgets.Aerc, args []string) []string {
 }
 
 func (Open) Execute(aerc *widgets.Aerc, args []string) error {
-	if len(args) != 1 {
-		return errors.New("Usage: open")
-	}
-
 	mv := aerc.SelectedTab().(*widgets.MessageViewer)
 	p := mv.SelectedMessagePart()
 
@@ -49,20 +44,33 @@ func (Open) Execute(aerc *widgets.Aerc, args []string) error {
 
 		tmpFile, err := ioutil.TempFile(os.TempDir(), "aerc-*"+extension)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 			return
 		}
 		defer tmpFile.Close()
 
 		_, err = io.Copy(tmpFile, reader)
 		if err != nil {
-			aerc.PushError(" " + err.Error())
+			aerc.PushError(err.Error())
 			return
 		}
 
-		lib.OpenFile(tmpFile.Name(), func(err error) {
-			aerc.PushError(" " + err.Error())
-		})
+		xdg := lib.NewXDGOpen(tmpFile.Name())
+		// pass through any arguments the user provided to the underlying handler
+		if len(args) > 1 {
+			xdg.SetArgs(args[1:])
+		}
+		err = xdg.Start()
+		if err != nil {
+			aerc.PushError(err.Error())
+			return
+		}
+		go func() {
+			err := xdg.Wait()
+			if err != nil {
+				aerc.PushError(err.Error())
+			}
+		}()
 
 		aerc.PushStatus("Opened", 10*time.Second)
 	})

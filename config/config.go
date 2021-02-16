@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/go-ini/ini"
 	"github.com/imdario/mergo"
 	"github.com/kyoh86/xdg"
@@ -636,9 +636,8 @@ func checkConfigPerms(filename string) error {
 		return nil // disregard absent files
 	}
 	perms := info.Mode().Perm()
-	goPerms := perms >> 3
 	// group or others have read access
-	if goPerms&0x44 != 0 {
+	if perms&044 != 0 {
 		fmt.Fprintf(os.Stderr, "The file %v has too open permissions.\n", filename)
 		fmt.Fprintln(os.Stderr, "This is a security issue (it contains passwords).")
 		fmt.Fprintf(os.Stderr, "To fix it, run `chmod 600 %v`\n", filename)

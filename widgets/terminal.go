@@ -10,7 +10,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/ddevault/go-libvterm"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 )
 
 type vtermKey struct {
@@ -67,6 +67,7 @@ func init() {
 	keyMap[tcell.KeyCtrlUnderscore] = runeMod('_', vterm.ModCtrl)
 	keyMap[tcell.KeyEnter] = directKey(vterm.KeyEnter)
 	keyMap[tcell.KeyTab] = directKey(vterm.KeyTab)
+	keyMap[tcell.KeyBacktab] = keyMod(vterm.KeyTab, vterm.ModShift)
 	keyMap[tcell.KeyBackspace] = directKey(vterm.KeyBackspace)
 	keyMap[tcell.KeyEscape] = directKey(vterm.KeyEscape)
 	keyMap[tcell.KeyUp] = directKey(vterm.KeyUp)
@@ -406,7 +407,7 @@ func (term *Terminal) styleFromCell(cell *vterm.ScreenCell) tcell.Style {
 	if background.IsDefaultBg() {
 		bg = tcell.ColorDefault
 	} else if background.IsIndexed() {
-		bg = tcell.Color(background.GetIndex())
+		bg = tcell.Color(tcell.PaletteColor(int(background.GetIndex())))
 	} else if background.IsRgb() {
 		r, g, b := background.GetRGB()
 		bg = tcell.NewRGBColor(int32(r), int32(g), int32(b))
@@ -414,7 +415,7 @@ func (term *Terminal) styleFromCell(cell *vterm.ScreenCell) tcell.Style {
 	if foreground.IsDefaultFg() {
 		fg = tcell.ColorDefault
 	} else if foreground.IsIndexed() {
-		fg = tcell.Color(foreground.GetIndex())
+		fg = tcell.Color(tcell.PaletteColor(int(foreground.GetIndex())))
 	} else if foreground.IsRgb() {
 		r, g, b := foreground.GetRGB()
 		fg = tcell.NewRGBColor(int32(r), int32(g), int32(b))
@@ -424,6 +425,9 @@ func (term *Terminal) styleFromCell(cell *vterm.ScreenCell) tcell.Style {
 
 	if cell.Attrs().Bold != 0 {
 		style = style.Bold(true)
+	}
+	if cell.Attrs().Italic != 0 {
+		style = style.Italic(true)
 	}
 	if cell.Attrs().Underline != 0 {
 		style = style.Underline(true)

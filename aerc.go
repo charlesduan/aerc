@@ -77,17 +77,19 @@ func execCommand(aerc *widgets.Aerc, ui *libui.UI, cmd []string) error {
 
 func getCompletions(aerc *widgets.Aerc, cmd string) ([]string, int) {
 	var completions []string
-    chomp := -1
+	chomp := -1
 	for _, set := range getCommands((*aerc).SelectedTab()) {
-        new_completions, new_chomp := set.GetCompletions(aerc, cmd)
-        if new_completions != nil {
-            completions = append(completions, new_completions...)
-            if chomp > new_chomp || chomp == -1 {
-                chomp = new_chomp
-            }
-        }
+		new_completions, new_chomp := set.GetCompletions(aerc, cmd)
+		if new_completions != nil {
+			completions = append(completions, new_completions...)
+			if chomp > new_chomp || chomp == -1 {
+				chomp = new_chomp
+			}
+		}
 	}
-    if (chomp == -1) { chomp = 0 }
+	if chomp == -1 {
+		chomp = 0
+	}
 	sort.Strings(completions)
 	return completions, chomp
 }

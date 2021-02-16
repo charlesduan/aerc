@@ -69,8 +69,8 @@ func (cmds *Commands) ExecuteCommand(aerc *widgets.Aerc, args []string) error {
 }
 
 func (cmds *Commands) GetCompletions(
-    aerc *widgets.Aerc,
-    cmd string,
+	aerc *widgets.Aerc,
+	cmd string,
 ) ([]string, int) {
 	args, err := shlex.Split(cmd)
 	if err != nil {

@@ -27,7 +27,7 @@ type TextInput struct {
 	tabcomplete       func(s string) ([]string, int)
 	completions       []string
 	completeIndex     int
-	completeChomp	  int
+	completeChomp     int
 	completeDelay     time.Duration
 	completeDebouncer *time.Timer
 	uiConfig          config.UIConfig
@@ -359,7 +359,7 @@ type completions struct {
 	options    []string
 	stringLeft string
 	idx        int
-        chompLeft  int
+	chompLeft  int
 	onSelect   func(int)
 	onExec     func()
 	onStem     func(string)
@@ -369,7 +369,9 @@ type completions struct {
 func maxLen(ss []string, chomp int) int {
 	max := 0
 	for _, s := range ss {
-		if len(s) <= chomp { continue }
+		if len(s) <= chomp {
+			continue
+		}
 		l := runewidth.StringWidth(s[chomp:])
 		if l > max {
 			max = l
